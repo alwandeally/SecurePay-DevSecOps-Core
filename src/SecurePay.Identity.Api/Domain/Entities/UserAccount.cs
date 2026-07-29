@@ -8,17 +8,14 @@ public sealed class UserAccount
     {
     }
 
-    public UserAccount(
+    public static UserAccount Register(
         string email,
-        string passwordHash,
         string firstName,
-        string lastName)
+        string lastName,
+        Func<UserAccount, string> passwordHashFactory)
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("Email is required.", nameof(email));
-
-        if (string.IsNullOrWhiteSpace(passwordHash))
-            throw new ArgumentException("Password hash is required.", nameof(passwordHash));
 
         if (string.IsNullOrWhiteSpace(firstName))
             throw new ArgumentException("First name is required.", nameof(firstName));
@@ -26,15 +23,29 @@ public sealed class UserAccount
         if (string.IsNullOrWhiteSpace(lastName))
             throw new ArgumentException("Last name is required.", nameof(lastName));
 
-        Id = Guid.NewGuid();
-        Email = email.Trim();
-        NormalizedEmail = email.Trim().ToUpperInvariant();
-        PasswordHash = passwordHash;
-        FirstName = firstName.Trim();
-        LastName = lastName.Trim();
-        Role = UserRole.Customer;
-        IsActive = true;
-        CreatedAtUtc = DateTimeOffset.UtcNow;
+        ArgumentNullException.ThrowIfNull(passwordHashFactory);
+
+        var user = new UserAccount
+        {
+            Id = Guid.NewGuid(),
+            Email = email.Trim(),
+            NormalizedEmail = email.Trim().ToUpperInvariant(),
+            FirstName = firstName.Trim(),
+            LastName = lastName.Trim(),
+            Role = UserRole.Customer,
+            IsActive = true,
+            CreatedAtUtc = DateTimeOffset.UtcNow
+        };
+
+        var passwordHash = passwordHashFactory(user);
+
+        if (string.IsNullOrWhiteSpace(passwordHash))
+            throw new InvalidOperationException(
+                "The password hashing operation returned an invalid hash.");
+
+        user.PasswordHash = passwordHash;
+
+        return user;
     }
 
     public Guid Id { get; private set; }
@@ -98,7 +109,9 @@ public sealed class UserAccount
         DateTimeOffset changedAtUtc)
     {
         if (string.IsNullOrWhiteSpace(passwordHash))
-            throw new ArgumentException("Password hash is required.", nameof(passwordHash));
+            throw new ArgumentException(
+                "Password hash is required.",
+                nameof(passwordHash));
 
         PasswordHash = passwordHash;
         UpdatedAtUtc = changedAtUtc;

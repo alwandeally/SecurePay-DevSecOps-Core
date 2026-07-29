@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using SecurePay.Identity.Api.Persistence;
+using Microsoft.AspNetCore.Identity;
+using SecurePay.Identity.Api.Domain.Entities;
+using SecurePay.Identity.Api.Application.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +16,14 @@ var identityConnectionString =
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<
+    IPasswordHasher<UserAccount>,
+    PasswordHasher<UserAccount>>();
+
+builder.Services.AddScoped<
+    IUserRegistrationService,
+    UserRegistrationService>();
 
 builder.Services.AddDbContext<IdentityDbContext>(options =>
     options.UseNpgsql(

@@ -1,0 +1,52 @@
+name: securepay
+
+services:
+  identity-db:
+    image: postgres:17.10-alpine3.24
+    container_name: securepay-identity-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: securepay_identity
+      POSTGRES_USER: securepay_identity_user
+      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - identity-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U securepay_identity_user -d securepay_identity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - securepay-backend
+
+  transactions-db:
+    image: postgres:17.10-alpine3.24
+    container_name: securepay-transactions-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: securepay_transactions
+      POSTGRES_USER: securepay_transactions_user
+      POSTGRES_PASSWORD: ${TRANSACTIONS_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - transactions-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U securepay_transactions_user -d securepay_transactions"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - securepay-backend
+
+volumes:
+  identity-db-data:
+  transactions-db-data:
+
+networks:
+  securepay-backend:
+    driver: bridge

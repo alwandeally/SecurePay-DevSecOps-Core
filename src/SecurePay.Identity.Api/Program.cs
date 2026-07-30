@@ -5,13 +5,30 @@ using SecurePay.Identity.Api.Persistence;
 using Microsoft.AspNetCore.Identity;
 using SecurePay.Identity.Api.Domain.Entities;
 using SecurePay.Identity.Api.Application.Authentication;
+using SecurePay.Identity.Api.Configuration;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
+
+builder.Services.AddScoped<
+    IUserRegistrationService,
+    UserRegistrationService>();
+
+builder.Services.AddSingleton<
+    IJwtTokenService,
+    JwtTokenService>();
 
 var identityConnectionString =
     builder.Configuration.GetConnectionString("IdentityDatabase")
     ?? throw new InvalidOperationException(
         "The Identity database connection string is not configured.");
+
+builder.Services.AddScoped<
+    IUserLoginService,
+    UserLoginService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -44,6 +61,71 @@ builder.Services.AddHealthChecks()
         failureStatus: HealthStatus.Unhealthy,
         tags: ["ready"]);
 
+
+builder.Services
+    .AddOptions<JwtOptions>()
+    .Bind(builder.Configuration.GetSection(
+        JwtOptions.SectionName))
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.Issuer),
+        "JWT issuer is required.")
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.Audience),
+        "JWT audience is required.")
+    .Validate(
+        options => options.SigningKey.Length >= 64,
+        "JWT signing key must contain at least 64 characters.")
+    .Validate(
+        options => options.AccessTokenMinutes is >= 5 and <= 60,
+        "JWT access-token lifetime must be between 5 and 60 minutes.")
+    .ValidateOnStart();
+
+var jwtOptions = builder.Configuration
+    .GetSection(JwtOptions.SectionName)
+    .Get<JwtOptions>()
+    ?? throw new InvalidOperationException(
+        "JWT configuration is missing.");
+
+builder.Services
+    .AddAuthentication(
+        JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+        options.SaveToken = false;
+        options.IncludeErrorDetails =
+            builder.Environment.IsDevelopment();
+
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwtOptions.Issuer,
+
+                ValidateAudience = true,
+                ValidAudience = jwtOptions.Audience,
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Convert.FromBase64String(
+                        jwtOptions.SigningKey)),
+
+                ValidateLifetime = true,
+                RequireExpirationTime = true,
+                RequireSignedTokens = true,
+
+                ValidAlgorithms =
+                [
+                    SecurityAlgorithms.HmacSha256
+                ],
+
+                NameClaimType = JwtRegisteredClaimNames.Sub,
+                RoleClaimType = "role",
+
+                ClockSkew = TimeSpan.FromSeconds(30)
+            };
+    });
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -52,6 +134,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -81,17 +81,38 @@ public sealed class UserAccount
     }
 
     public void RecordFailedLogin(
-        DateTimeOffset occurredAtUtc,
-        int maximumAttempts,
-        TimeSpan lockoutDuration)
+    DateTimeOffset occurredAtUtc,
+    int maximumAttempts,
+    TimeSpan lockoutDuration)
     {
         if (maximumAttempts < 1)
-            throw new ArgumentOutOfRangeException(nameof(maximumAttempts));
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maximumAttempts));
+        }
+
+        if (lockoutDuration <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(lockoutDuration));
+        }
+
+        // If the previous lockout has expired, begin a fresh
+        // failed-login cycle before recording the new attempt.
+        if (LockoutEndUtc.HasValue &&
+            LockoutEndUtc.Value <= occurredAtUtc)
+        {
+            FailedLoginAttempts = 0;
+            LockoutEndUtc = null;
+        }
 
         FailedLoginAttempts++;
 
         if (FailedLoginAttempts >= maximumAttempts)
-            LockoutEndUtc = occurredAtUtc.Add(lockoutDuration);
+        {
+            LockoutEndUtc =
+                occurredAtUtc.Add(lockoutDuration);
+        }
 
         UpdatedAtUtc = occurredAtUtc;
     }

@@ -1,6 +1,29 @@
-@SecurePay.Transactions.Api_HostAddress = http://localhost:5070
+@identityUrl = https://localhost:7279
+@transactionsUrl = https://localhost:7175
+@accessToken = PASTE_ACCESS_TOKEN_HERE
 
-GET {{SecurePay.Transactions.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### 1. Log in and obtain a JWT
+POST {{identityUrl}}/api/auth/login
+Content-Type: application/json
 
-###
+{
+  "email": "alwande.demo@securepay.local",
+  "password": "SecurePayDemo!2026#Register"
+}
+
+### 2. Verify the JWT with the Identity API
+GET {{identityUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### 3. Create a protected transaction
+POST {{transactionsUrl}}/api/transactions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "transactionType": "Deposit",
+  "amount": 1250.00,
+  "currency": "ZAR",
+  "idempotencyKey": "visual-studio-deposit-001",
+  "description": "First SecurePay cross-service deposit"
+}

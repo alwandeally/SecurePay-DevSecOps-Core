@@ -14,7 +14,9 @@ services:
     volumes:
       - identity-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U securepay_identity_user -d securepay_identity"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U securepay_identity_user -d securepay_identity
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,11 +37,53 @@ services:
     volumes:
       - transactions-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U securepay_transactions_user -d securepay_transactions"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U securepay_transactions_user -d securepay_transactions
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - securepay-backend
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: src/SecurePay.Identity.Api/Dockerfile
+    image: securepay-identity-api:local
+    container_name: securepay-identity-api
+    restart: unless-stopped
+    depends_on:
+      identity-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__IdentityDatabase: "Host=identity-db;Port=5432;Database=securepay_identity;Username=securepay_identity_user;Password=${IDENTITY_DB_PASSWORD};Pooling=true;Maximum Pool Size=100;Timeout=15;Command Timeout=30"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY}
+    ports:
+      - "127.0.0.1:7101:8080"
+    networks:
+      - securepay-backend
+
+  transactions-api:
+    build:
+      context: .
+      dockerfile: src/SecurePay.Transactions.Api/Dockerfile
+    image: securepay-transactions-api:local
+    container_name: securepay-transactions-api
+    restart: unless-stopped
+    depends_on:
+      transactions-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__TransactionsDatabase: "Host=transactions-db;Port=5432;Database=securepay_transactions;Username=securepay_transactions_user;Password=${TRANSACTIONS_DB_PASSWORD};Pooling=true;Maximum Pool Size=100;Timeout=15;Command Timeout=30"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY}
+    ports:
+      - "127.0.0.1:7102:8080"
     networks:
       - securepay-backend
 

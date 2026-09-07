@@ -133,6 +133,54 @@ public sealed class TransactionService(
             .ToArray();
     }
 
+    public async Task<TransactionResponse?> CompleteAsync(
+        Guid transactionId,
+        CancellationToken cancellationToken)
+    {
+        var transaction =
+            await dbContext.PaymentTransactions
+                .SingleOrDefaultAsync(
+                    existing =>
+                        existing.Id == transactionId,
+                    cancellationToken);
+
+        if (transaction is null)
+        {
+            return null;
+        }
+
+        transaction.MarkCompleted(DateTimeOffset.UtcNow);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapResponse(transaction);
+    }
+
+    public async Task<TransactionResponse?> FailAsync(
+        Guid transactionId,
+        string failureReason,
+        CancellationToken cancellationToken)
+    {
+        var transaction =
+            await dbContext.PaymentTransactions
+                .SingleOrDefaultAsync(
+                    existing =>
+                        existing.Id == transactionId,
+                    cancellationToken);
+
+        if (transaction is null)
+        {
+            return null;
+        }
+
+        transaction.MarkFailed(
+            failureReason,
+            DateTimeOffset.UtcNow);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapResponse(transaction);
+    }
     private static TransactionResponse MapResponse(
         PaymentTransaction transaction)
     {

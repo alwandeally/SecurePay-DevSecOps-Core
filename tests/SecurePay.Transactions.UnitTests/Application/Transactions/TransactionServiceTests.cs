@@ -156,6 +156,132 @@ public sealed class TransactionServiceTests
         Assert.Empty(responses);
     }
 
+    [Fact]
+    public async Task CompleteAsync_WhenPending_MarksTransactionCompleted()
+    {
+        await using var dbContext = CreateDbContext();
+
+        var transaction =
+            CreateTransaction(Guid.NewGuid(), 750m);
+
+        dbContext.PaymentTransactions.Add(transaction);
+        await dbContext.SaveChangesAsync();
+
+        var service = new TransactionService(dbContext);
+
+        var response = await service.CompleteAsync(
+            transaction.Id,
+            CancellationToken.None);
+
+        Assert.NotNull(response);
+        Assert.Equal("Completed", response.Status);
+        Assert.NotNull(response.CompletedAtUtc);
+        Assert.Equal(
+            response.CompletedAtUtc,
+            response.UpdatedAtUtc);
+        Assert.Null(response.FailureReason);
+    }
+
+    [Fact]
+    public async Task CompleteAsync_WhenMissing_ReturnsNull()
+    {
+        await using var dbContext = CreateDbContext();
+
+        var service = new TransactionService(dbContext);
+
+        var response = await service.CompleteAsync(
+            Guid.NewGuid(),
+            CancellationToken.None);
+
+        Assert.Null(response);
+    }
+
+    [Fact]
+    public async Task FailAsync_WhenPending_MarksTransactionFailed()
+    {
+        await using var dbContext = CreateDbContext();
+
+        var transaction =
+            CreateTransaction(Guid.NewGuid(), 900m);
+
+        dbContext.PaymentTransactions.Add(transaction);
+        await dbContext.SaveChangesAsync();
+
+        var service = new TransactionService(dbContext);
+
+        var response = await service.FailAsync(
+            transaction.Id,
+            "  Payment provider declined the request  ",
+            CancellationToken.None);
+
+        Assert.NotNull(response);
+        Assert.Equal("Failed", response.Status);
+        Assert.Equal(
+            "Payment provider declined the request",
+            response.FailureReason);
+        Assert.NotNull(response.UpdatedAtUtc);
+        Assert.Null(response.CompletedAtUtc);
+    }
+
+    [Fact]
+    public async Task FailAsync_WhenMissing_ReturnsNull()
+    {
+        await using var dbContext = CreateDbContext();
+
+        var service = new TransactionService(dbContext);
+
+        var response = await service.FailAsync(
+            Guid.NewGuid(),
+            "Payment provider unavailable",
+            CancellationToken.None);
+
+        Assert.Null(response);
+    }
+
+    [Fact]
+    public async Task CompleteAsync_WhenAlreadyFailed_ThrowsInvalidOperationException()
+    {
+        await using var dbContext = CreateDbContext();
+
+        var transaction =
+            CreateTransaction(Guid.NewGuid(), 500m);
+
+        transaction.MarkFailed(
+            "Payment declined",
+            DateTimeOffset.UtcNow);
+
+        dbContext.PaymentTransactions.Add(transaction);
+        await dbContext.SaveChangesAsync();
+
+        var service = new TransactionService(dbContext);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.CompleteAsync(
+                transaction.Id,
+                CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task FailAsync_WhenAlreadyCompleted_ThrowsInvalidOperationException()
+    {
+        await using var dbContext = CreateDbContext();
+
+        var transaction =
+            CreateTransaction(Guid.NewGuid(), 500m);
+
+        transaction.MarkCompleted(DateTimeOffset.UtcNow);
+
+        dbContext.PaymentTransactions.Add(transaction);
+        await dbContext.SaveChangesAsync();
+
+        var service = new TransactionService(dbContext);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.FailAsync(
+                transaction.Id,
+                "Cannot fail a completed transaction",
+                CancellationToken.None));
+    }
     private static TransactionsDbContext CreateDbContext()
     {
         var options =

@@ -143,6 +143,20 @@ public sealed class PaymentTransactionTests
                 DateTimeOffset.UtcNow));
     }
 
+    [Fact]
+    public void MarkFailed_WithOversizedReason_RejectsWithoutChangingStatus()
+    {
+        var transaction = CreateValidTransaction();
+
+        Assert.Throws<ArgumentException>(() =>
+            transaction.MarkFailed(
+                new string('x', 501),
+                DateTimeOffset.UtcNow));
+
+        Assert.Equal(PaymentStatus.Pending, transaction.Status);
+        Assert.Null(transaction.FailureReason);
+        Assert.Null(transaction.UpdatedAtUtc);
+    }
     private static PaymentTransaction CreateValidTransaction()
     {
         return PaymentTransaction.Create(

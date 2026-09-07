@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.8.12021.73 stable
+VisualStudioVersion = 18.8.12021.73
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
@@ -16,6 +16,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePay.Identity.UnitTests", "tests\SecurePay.Identity.UnitTests\SecurePay.Identity.UnitTests.csproj", "{D839C53D-5CC4-4DD4-AD22-86CE68530A72}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePay.Transactions.UnitTests", "tests\SecurePay.Transactions.UnitTests\SecurePay.Transactions.UnitTests.csproj", "{328D41E6-8ECE-44DE-9E9B-1E06D9BC453C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePay.Transactions.IntegrationTests", "tests\SecurePay.Transactions.IntegrationTests\SecurePay.Transactions.IntegrationTests.csproj", "{66CC1F9E-638D-4E36-804F-8F7CE6534686}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -87,6 +89,18 @@ Global
 		{328D41E6-8ECE-44DE-9E9B-1E06D9BC453C}.Release|x64.Build.0 = Release|Any CPU
 		{328D41E6-8ECE-44DE-9E9B-1E06D9BC453C}.Release|x86.ActiveCfg = Release|Any CPU
 		{328D41E6-8ECE-44DE-9E9B-1E06D9BC453C}.Release|x86.Build.0 = Release|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Debug|x64.Build.0 = Debug|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Debug|x86.Build.0 = Debug|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Release|x64.ActiveCfg = Release|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Release|x64.Build.0 = Release|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Release|x86.ActiveCfg = Release|Any CPU
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -97,6 +111,7 @@ Global
 		{CA45A8F1-1B58-473C-88A6-53C9A376D539} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{D839C53D-5CC4-4DD4-AD22-86CE68530A72} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{328D41E6-8ECE-44DE-9E9B-1E06D9BC453C} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{66CC1F9E-638D-4E36-804F-8F7CE6534686} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A734AC4F-9169-456C-B386-9B7C42BD1327}

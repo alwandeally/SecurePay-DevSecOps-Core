@@ -187,3 +187,5 @@ app.MapGet(
     .WithName("GetTransactionsServiceStatus");
 
 app.Run();
+
+public partial class Program;

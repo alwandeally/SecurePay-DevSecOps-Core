@@ -3,6 +3,6 @@
 namespace SecurePay.Transactions.Api.Contracts.Transactions;
 
 public sealed record FailTransactionRequest(
-    [property: Required]
-    [property: StringLength(500, MinimumLength = 1)]
+    [Required]
+    [MaxLength(500)]
     string FailureReason);

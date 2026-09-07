@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SecurePay.Transactions.Api.Application.Transactions;
+using SecurePay.Transactions.Api.Authorization;
 using SecurePay.Transactions.Api.Configuration;
 using SecurePay.Transactions.Api.Persistence;
 
@@ -126,7 +127,14 @@ builder.Services
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        AuthorizationPolicies.TransactionProcessor,
+        policy => policy.RequireRole(
+            AuthorizationPolicies.OperationsRole,
+            AuthorizationPolicies.AdministratorRole));
+});
 
 builder.Services.AddScoped<
     ITransactionService,

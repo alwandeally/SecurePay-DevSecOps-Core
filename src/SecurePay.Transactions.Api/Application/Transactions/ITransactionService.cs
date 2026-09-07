@@ -17,4 +17,13 @@ public interface ITransactionService
     Task<IReadOnlyList<TransactionResponse>> GetAllAsync(
         Guid userId,
         CancellationToken cancellationToken);
+
+    Task<TransactionResponse?> CompleteAsync(
+        Guid transactionId,
+        CancellationToken cancellationToken);
+
+    Task<TransactionResponse?> FailAsync(
+        Guid transactionId,
+        string failureReason,
+        CancellationToken cancellationToken);
 }

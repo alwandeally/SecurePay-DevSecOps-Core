@@ -171,8 +171,18 @@ public sealed class PaymentTransaction
                 nameof(failureReason));
         }
 
+        var normalizedFailureReason =
+            failureReason.Trim();
+
+        if (normalizedFailureReason.Length > 500)
+        {
+            throw new ArgumentException(
+                "Failure reason cannot exceed 500 characters.",
+                nameof(failureReason));
+        }
+
         Status = PaymentStatus.Failed;
-        FailureReason = failureReason.Trim();
+        FailureReason = normalizedFailureReason;
         UpdatedAtUtc = failedAtUtc;
     }
 

@@ -18,6 +18,9 @@ public sealed class PaymentTransactionConfiguration
             .HasColumnName("id")
             .ValueGeneratedNever();
 
+        builder.Property(transaction => transaction.Version)
+            .IsRowVersion();
+
         builder.Property(transaction => transaction.UserId)
             .HasColumnName("user_id")
             .IsRequired();
@@ -77,19 +80,19 @@ public sealed class PaymentTransactionConfiguration
             .HasDatabaseName("ux_payment_transactions_reference");
 
         builder.HasIndex(transaction => new
-            {
-                transaction.UserId,
-                transaction.IdempotencyKey
-            })
+        {
+            transaction.UserId,
+            transaction.IdempotencyKey
+        })
             .IsUnique()
             .HasDatabaseName(
                 "ux_payment_transactions_user_id_idempotency_key");
 
         builder.HasIndex(transaction => new
-            {
-                transaction.UserId,
-                transaction.CreatedAtUtc
-            })
+        {
+            transaction.UserId,
+            transaction.CreatedAtUtc
+        })
             .HasDatabaseName(
                 "ix_payment_transactions_user_id_created_at_utc");
     }

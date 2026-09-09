@@ -151,7 +151,9 @@ public sealed class TransactionService(
 
         transaction.MarkCompleted(DateTimeOffset.UtcNow);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await SaveLifecycleChangeAsync(
+            transactionId,
+            cancellationToken);
 
         return MapResponse(transaction);
     }
@@ -177,9 +179,27 @@ public sealed class TransactionService(
             failureReason,
             DateTimeOffset.UtcNow);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await SaveLifecycleChangeAsync(
+            transactionId,
+            cancellationToken);
 
         return MapResponse(transaction);
+    }
+    private async Task SaveLifecycleChangeAsync(
+        Guid transactionId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await dbContext.SaveChangesAsync(
+                cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new TransactionConcurrencyException(
+                transactionId,
+                exception);
+        }
     }
     private static TransactionResponse MapResponse(
         PaymentTransaction transaction)

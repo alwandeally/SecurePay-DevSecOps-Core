@@ -10,6 +10,9 @@ public sealed class TransactionsDbContext(
     public DbSet<PaymentTransaction> PaymentTransactions =>
         Set<PaymentTransaction>();
 
+    public DbSet<WalletAccount> WalletAccounts =>
+        Set<WalletAccount>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

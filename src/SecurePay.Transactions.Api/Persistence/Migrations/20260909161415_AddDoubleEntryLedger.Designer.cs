@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SecurePay.Transactions.Api.Persistence;
@@ -11,9 +12,11 @@ using SecurePay.Transactions.Api.Persistence;
 namespace SecurePay.Transactions.Api.Persistence.Migrations
 {
     [DbContext(typeof(TransactionsDbContext))]
-    partial class TransactionsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260909161415_AddDoubleEntryLedger")]
+    partial class AddDoubleEntryLedger
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

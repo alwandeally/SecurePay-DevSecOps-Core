@@ -35,6 +35,15 @@ public sealed class TransactionLifecycleController(
                 ? NotFound()
                 : Ok(response);
         }
+        catch (TransactionConcurrencyException exception)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Concurrent transaction update",
+                Detail = exception.Message,
+                Status = StatusCodes.Status409Conflict
+            });
+        }
         catch (InvalidOperationException exception)
         {
             return Conflict(new ProblemDetails
@@ -78,6 +87,15 @@ public sealed class TransactionLifecycleController(
                 Title = "Invalid failure request",
                 Detail = exception.Message,
                 Status = StatusCodes.Status400BadRequest
+            });
+        }
+        catch (TransactionConcurrencyException exception)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Concurrent transaction update",
+                Detail = exception.Message,
+                Status = StatusCodes.Status409Conflict
             });
         }
         catch (InvalidOperationException exception)

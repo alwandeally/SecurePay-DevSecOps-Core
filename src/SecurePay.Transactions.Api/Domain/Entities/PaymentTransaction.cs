@@ -33,6 +33,8 @@ public sealed class PaymentTransaction
 
     public Guid Id { get; private set; }
 
+    public uint Version { get; private set; }
+
     public Guid UserId { get; private set; }
 
     public TransactionType Type { get; private set; }

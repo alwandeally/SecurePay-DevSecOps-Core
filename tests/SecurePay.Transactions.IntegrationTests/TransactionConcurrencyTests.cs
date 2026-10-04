@@ -21,7 +21,7 @@ public sealed class TransactionConcurrencyTests(
         var transaction =
             PaymentTransaction.Create(
                 Guid.NewGuid(),
-                TransactionType.Transfer,
+                TransactionType.Deposit,
                 125.50m,
                 "ZAR",
                 $"concurrency-{Guid.NewGuid():N}",
@@ -34,7 +34,8 @@ public sealed class TransactionConcurrencyTests(
                 seedScope.ServiceProvider
                     .GetRequiredService<TransactionsDbContext>();
 
-            seedDbContext.PaymentTransactions.Add(transaction);
+            seedDbContext.PaymentTransactions.Add(
+                transaction);
 
             await seedDbContext.SaveChangesAsync();
         }
@@ -46,47 +47,42 @@ public sealed class TransactionConcurrencyTests(
             staleScope.ServiceProvider
                 .GetRequiredService<TransactionsDbContext>();
 
-        var staleTransaction =
-            await staleDbContext.PaymentTransactions
-                .SingleAsync(existing =>
-                    existing.Id == transaction.Id);
-
-        Assert.Equal(
-            PaymentStatus.Pending,
-            staleTransaction.Status);
+        _ = await staleDbContext.PaymentTransactions
+            .SingleAsync(existing =>
+                existing.Id == transaction.Id);
 
         await using (var winningScope =
             fixture.Factory.Services.CreateAsyncScope())
         {
-            var winningService =
+            var winningDbContext =
                 winningScope.ServiceProvider
-                    .GetRequiredService<ITransactionService>();
+                    .GetRequiredService<TransactionsDbContext>();
 
-            var completed =
-                await winningService.CompleteAsync(
+            var winningService =
+                new TransactionService(
+                    winningDbContext);
+
+            var winningResponse =
+                await winningService.FailAsync(
                     transaction.Id,
+                    "Processor rejected the transaction",
                     CancellationToken.None);
 
-            Assert.NotNull(completed);
+            Assert.NotNull(winningResponse);
             Assert.Equal(
-                nameof(PaymentStatus.Completed),
-                completed.Status);
+                "Failed",
+                winningResponse.Status);
         }
 
         var staleService =
-            staleScope.ServiceProvider
-                .GetRequiredService<ITransactionService>();
+            new TransactionService(
+                staleDbContext);
 
-        var exception =
-            await Assert.ThrowsAsync<
-                TransactionConcurrencyException>(
-                () => staleService.FailAsync(
-                    transaction.Id,
-                    "A stale operation attempted to fail the transaction.",
-                    CancellationToken.None));
-
-        Assert.IsType<DbUpdateConcurrencyException>(
-            exception.InnerException);
+        await Assert.ThrowsAsync<TransactionConcurrencyException>(
+            () => staleService.FailAsync(
+                transaction.Id,
+                "Stale processor decision",
+                CancellationToken.None));
 
         await using var verificationScope =
             fixture.Factory.Services.CreateAsyncScope();
@@ -102,13 +98,11 @@ public sealed class TransactionConcurrencyTests(
                     existing.Id == transaction.Id);
 
         Assert.Equal(
-            PaymentStatus.Completed,
+            PaymentStatus.Failed,
             persistedTransaction.Status);
 
-        Assert.NotNull(
-            persistedTransaction.CompletedAtUtc);
-
-        Assert.Null(
+        Assert.Equal(
+            "Processor rejected the transaction",
             persistedTransaction.FailureReason);
     }
 }

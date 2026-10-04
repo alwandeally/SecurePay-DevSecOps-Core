@@ -17,10 +17,12 @@ public sealed class PaymentTransaction
         decimal amount,
         string currency,
         string idempotencyKey,
-        string? description)
+        string? description,
+        Guid? destinationUserId)
     {
         Id = Guid.NewGuid();
         UserId = userId;
+        DestinationUserId = destinationUserId;
         Type = type;
         Amount = amount;
         Currency = currency;
@@ -36,6 +38,8 @@ public sealed class PaymentTransaction
     public uint Version { get; private set; }
 
     public Guid UserId { get; private set; }
+
+    public Guid? DestinationUserId { get; private set; }
 
     public TransactionType Type { get; private set; }
 
@@ -65,7 +69,8 @@ public sealed class PaymentTransaction
         decimal amount,
         string currency,
         string idempotencyKey,
-        string? description = null)
+        string? description = null,
+        Guid? destinationUserId = null)
     {
         if (userId == Guid.Empty)
         {
@@ -80,6 +85,11 @@ public sealed class PaymentTransaction
                 nameof(type),
                 "A valid transaction type is required.");
         }
+
+        ValidateDestination(
+            userId,
+            type,
+            destinationUserId);
 
         if (amount <= 0)
         {
@@ -120,7 +130,8 @@ public sealed class PaymentTransaction
                 nameof(idempotencyKey));
         }
 
-        var normalizedIdempotencyKey = idempotencyKey.Trim();
+        var normalizedIdempotencyKey =
+            idempotencyKey.Trim();
 
         if (normalizedIdempotencyKey.Length > 128)
         {
@@ -147,10 +158,12 @@ public sealed class PaymentTransaction
             amount,
             normalizedCurrency,
             normalizedIdempotencyKey,
-            normalizedDescription);
+            normalizedDescription,
+            destinationUserId);
     }
 
-    public void MarkCompleted(DateTimeOffset completedAtUtc)
+    public void MarkCompleted(
+        DateTimeOffset completedAtUtc)
     {
         EnsurePending();
 
@@ -186,6 +199,39 @@ public sealed class PaymentTransaction
         Status = PaymentStatus.Failed;
         FailureReason = normalizedFailureReason;
         UpdatedAtUtc = failedAtUtc;
+    }
+
+    private static void ValidateDestination(
+        Guid userId,
+        TransactionType type,
+        Guid? destinationUserId)
+    {
+        if (type == TransactionType.Transfer)
+        {
+            if (destinationUserId is null ||
+                destinationUserId == Guid.Empty)
+            {
+                throw new ArgumentException(
+                    "Destination user ID is required for transfers.",
+                    nameof(destinationUserId));
+            }
+
+            if (destinationUserId.Value == userId)
+            {
+                throw new ArgumentException(
+                    "A transfer destination must be different from the source user.",
+                    nameof(destinationUserId));
+            }
+
+            return;
+        }
+
+        if (destinationUserId is not null)
+        {
+            throw new ArgumentException(
+                "Destination user ID is only valid for transfers.",
+                nameof(destinationUserId));
+        }
     }
 
     private void EnsurePending()

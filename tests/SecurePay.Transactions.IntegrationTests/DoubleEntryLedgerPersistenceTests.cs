@@ -34,10 +34,6 @@ public sealed class DoubleEntryLedgerPersistenceTests(
                 wallet.Id,
                 "ZAR");
 
-        var clearingAccount =
-            LedgerAccount.CreatePlatformClearing(
-                "ZAR");
-
         var occurredAtUtc = new DateTimeOffset(
             2026,
             9,
@@ -47,20 +43,8 @@ public sealed class DoubleEntryLedgerPersistenceTests(
             0,
             TimeSpan.Zero);
 
-        var posting = LedgerPosting.Create(
-            transaction.Id,
-            "ZAR",
-            [
-                new LedgerLine(
-                    clearingAccount.Id,
-                    LedgerEntryDirection.Debit,
-                    125.50m),
-                new LedgerLine(
-                    customerAccount.Id,
-                    LedgerEntryDirection.Credit,
-                    125.50m)
-            ],
-            occurredAtUtc);
+        Guid postingId;
+        Guid clearingAccountId;
 
         await using (var creationScope =
             fixture.Factory.Services.CreateAsyncScope())
@@ -69,20 +53,54 @@ public sealed class DoubleEntryLedgerPersistenceTests(
                 creationScope.ServiceProvider
                     .GetRequiredService<TransactionsDbContext>();
 
+            var clearingAccount =
+                await creationDbContext.LedgerAccounts
+                    .SingleOrDefaultAsync(account =>
+                        account.AccountType ==
+                            LedgerAccountType.PlatformClearing &&
+                        account.Currency == "ZAR");
+
+            if (clearingAccount is null)
+            {
+                clearingAccount =
+                    LedgerAccount.CreatePlatformClearing(
+                        "ZAR");
+
+                creationDbContext.LedgerAccounts.Add(
+                    clearingAccount);
+            }
+
+            var posting = LedgerPosting.Create(
+                transaction.Id,
+                "ZAR",
+                [
+                    new LedgerLine(
+                        clearingAccount.Id,
+                        LedgerEntryDirection.Debit,
+                        125.50m),
+                    new LedgerLine(
+                        customerAccount.Id,
+                        LedgerEntryDirection.Credit,
+                        125.50m)
+                ],
+                occurredAtUtc);
+
             creationDbContext.PaymentTransactions.Add(
                 transaction);
 
             creationDbContext.WalletAccounts.Add(
                 wallet);
 
-            creationDbContext.LedgerAccounts.AddRange(
-                customerAccount,
-                clearingAccount);
+            creationDbContext.LedgerAccounts.Add(
+                customerAccount);
 
             creationDbContext.LedgerPostings.Add(
                 posting);
 
             await creationDbContext.SaveChangesAsync();
+
+            postingId = posting.Id;
+            clearingAccountId = clearingAccount.Id;
         }
 
         await using var verificationScope =
@@ -97,7 +115,7 @@ public sealed class DoubleEntryLedgerPersistenceTests(
                 .AsNoTracking()
                 .Include(existing => existing.Entries)
                 .SingleAsync(existing =>
-                    existing.Id == posting.Id);
+                    existing.Id == postingId);
 
         Assert.Equal(
             transaction.Id,
@@ -118,7 +136,7 @@ public sealed class DoubleEntryLedgerPersistenceTests(
         var debitEntry =
             persistedPosting.Entries.Single(entry =>
                 entry.LedgerAccountId ==
-                clearingAccount.Id);
+                clearingAccountId);
 
         Assert.Equal(
             LedgerEntryDirection.Debit,

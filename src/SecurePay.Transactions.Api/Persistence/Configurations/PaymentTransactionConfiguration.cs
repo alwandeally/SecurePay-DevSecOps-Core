@@ -10,7 +10,25 @@ public sealed class PaymentTransactionConfiguration
     public void Configure(
         EntityTypeBuilder<PaymentTransaction> builder)
     {
-        builder.ToTable("payment_transactions");
+        builder.ToTable(
+            "payment_transactions",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "ck_payment_transactions_destination",
+                    """
+                    (
+                        transaction_type = 'Transfer'
+                        AND destination_user_id IS NOT NULL
+                        AND destination_user_id <> user_id
+                    )
+                    OR
+                    (
+                        transaction_type IN ('Deposit', 'Withdrawal')
+                        AND destination_user_id IS NULL
+                    )
+                    """);
+            });
 
         builder.HasKey(transaction => transaction.Id);
 
@@ -24,6 +42,10 @@ public sealed class PaymentTransactionConfiguration
         builder.Property(transaction => transaction.UserId)
             .HasColumnName("user_id")
             .IsRequired();
+
+        builder.Property(
+                transaction => transaction.DestinationUserId)
+            .HasColumnName("destination_user_id");
 
         builder.Property(transaction => transaction.Type)
             .HasColumnName("transaction_type")
@@ -77,7 +99,8 @@ public sealed class PaymentTransactionConfiguration
 
         builder.HasIndex(transaction => transaction.Reference)
             .IsUnique()
-            .HasDatabaseName("ux_payment_transactions_reference");
+            .HasDatabaseName(
+                "ux_payment_transactions_reference");
 
         builder.HasIndex(transaction => new
         {
@@ -95,5 +118,15 @@ public sealed class PaymentTransactionConfiguration
         })
             .HasDatabaseName(
                 "ix_payment_transactions_user_id_created_at_utc");
+
+        builder.HasIndex(transaction => new
+        {
+            transaction.DestinationUserId,
+            transaction.CreatedAtUtc
+        })
+            .HasFilter(
+                "destination_user_id IS NOT NULL")
+            .HasDatabaseName(
+                "ix_payment_transactions_destination_user_id_created_at_utc");
     }
 }

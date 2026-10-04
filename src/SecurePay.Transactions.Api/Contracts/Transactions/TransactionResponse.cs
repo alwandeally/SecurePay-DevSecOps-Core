@@ -3,6 +3,7 @@
 public sealed record TransactionResponse(
     Guid TransactionId,
     Guid UserId,
+    Guid? DestinationUserId,
     string Reference,
     string TransactionType,
     decimal Amount,

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SecurePay.Transactions.Api.Application.Transactions;
+using SecurePay.Transactions.Api.Application.Wallets;
 using SecurePay.Transactions.Api.Authorization;
 using SecurePay.Transactions.Api.Configuration;
 using SecurePay.Transactions.Api.Persistence;
@@ -11,12 +12,14 @@ using SecurePay.Transactions.Api.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 
 var transactionsConnectionString =
-    builder.Configuration.GetConnectionString("TransactionsDatabase")
+    builder.Configuration.GetConnectionString(
+        "TransactionsDatabase")
     ?? throw new InvalidOperationException(
         "The TransactionsDatabase connection string is missing.");
 
 var jwtSection =
-    builder.Configuration.GetSection(JwtOptions.SectionName);
+    builder.Configuration.GetSection(
+        JwtOptions.SectionName);
 
 var jwtOptions =
     jwtSection.Get<JwtOptions>()
@@ -37,7 +40,8 @@ try
 {
     // Identity API uses Base64 decoding, so Transactions must do the same.
     jwtSigningKeyBytes =
-        Convert.FromBase64String(jwtOptions.SigningKey);
+        Convert.FromBase64String(
+            jwtOptions.SigningKey);
 }
 catch (FormatException exception)
 {
@@ -52,7 +56,8 @@ if (jwtSigningKeyBytes.Length < 32)
         "The JWT signing key must contain at least 32 bytes.");
 }
 
-builder.Services.Configure<JwtOptions>(jwtSection);
+builder.Services.Configure<JwtOptions>(
+    jwtSection);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -64,7 +69,8 @@ builder.Services.AddDbContext<TransactionsDbContext>(
             postgresqlOptions =>
                 postgresqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    maxRetryDelay:
+                        TimeSpan.FromSeconds(10),
                     errorCodesToAdd: null)));
 
 builder.Services
@@ -95,13 +101,15 @@ builder.Services
 
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey =
-                    new SymmetricSecurityKey(jwtSigningKeyBytes),
+                    new SymmetricSecurityKey(
+                        jwtSigningKeyBytes),
 
                 ValidateLifetime = true,
                 RequireExpirationTime = true,
                 RequireSignedTokens = true,
 
-                ClockSkew = TimeSpan.FromSeconds(30),
+                ClockSkew =
+                    TimeSpan.FromSeconds(30),
 
                 NameClaimType =
                     JwtRegisteredClaimNames.Sub,
@@ -109,22 +117,26 @@ builder.Services
                 RoleClaimType = "role"
             };
 
-        options.Events = new JwtBearerEvents
-        {
-            OnAuthenticationFailed = context =>
+        options.Events =
+            new JwtBearerEvents
             {
-                var logger =
-                    context.HttpContext.RequestServices
-                        .GetRequiredService<ILoggerFactory>()
-                        .CreateLogger("SecurePay.JwtAuthentication");
+                OnAuthenticationFailed = context =>
+                {
+                    var logger =
+                        context.HttpContext
+                            .RequestServices
+                            .GetRequiredService<
+                                ILoggerFactory>()
+                            .CreateLogger(
+                                "SecurePay.JwtAuthentication");
 
-                logger.LogWarning(
-                    context.Exception,
-                    "JWT authentication failed.");
+                    logger.LogWarning(
+                        context.Exception,
+                        "JWT authentication failed.");
 
-                return Task.CompletedTask;
-            }
-        };
+                    return Task.CompletedTask;
+                }
+            };
     });
 
 builder.Services.AddAuthorization(options =>
@@ -140,11 +152,15 @@ builder.Services.AddScoped<
     ITransactionService,
     TransactionService>();
 
+builder.Services.AddScoped<
+    IWalletQueryService,
+    WalletQueryService>();
+
 builder.Services
     .AddHealthChecks()
     .AddDbContextCheck<TransactionsDbContext>(
         name: "transactions-database",
-        tags: new[] { "ready" });
+        tags: ["ready"]);
 
 var app = builder.Build();
 
@@ -176,15 +192,19 @@ app.MapHealthChecks(
     });
 
 app.MapGet(
-    "/",
-    () => Results.Ok(new
-    {
-        service = "SecurePay Transactions API",
-        status = "Running",
-        environment = app.Environment.EnvironmentName,
-        timestamp = DateTimeOffset.UtcNow
-    }))
-    .WithName("GetTransactionsServiceStatus");
+        "/",
+        () => Results.Ok(new
+        {
+            service =
+                "SecurePay Transactions API",
+            status = "Running",
+            environment =
+                app.Environment.EnvironmentName,
+            timestamp =
+                DateTimeOffset.UtcNow
+        }))
+    .WithName(
+        "GetTransactionsServiceStatus");
 
 app.Run();
 

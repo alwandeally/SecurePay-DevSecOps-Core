@@ -1,4 +1,4 @@
-﻿using SecurePay.Identity.Api.Domain.Enums;
+using SecurePay.Identity.Api.Domain.Enums;
 
 namespace SecurePay.Identity.Api.Domain.Entities;
 
@@ -14,14 +14,49 @@ public sealed class UserAccount
         string lastName,
         Func<UserAccount, string> passwordHashFactory)
     {
+        return Create(
+            email,
+            firstName,
+            lastName,
+            UserRole.Customer,
+            passwordHashFactory);
+    }
+
+    public static UserAccount CreateOperations(
+        string email,
+        string firstName,
+        string lastName,
+        Func<UserAccount, string> passwordHashFactory)
+    {
+        return Create(
+            email,
+            firstName,
+            lastName,
+            UserRole.Operations,
+            passwordHashFactory);
+    }
+
+    private static UserAccount Create(
+        string email,
+        string firstName,
+        string lastName,
+        UserRole role,
+        Func<UserAccount, string> passwordHashFactory)
+    {
         if (string.IsNullOrWhiteSpace(email))
-            throw new ArgumentException("Email is required.", nameof(email));
+            throw new ArgumentException(
+                "Email is required.",
+                nameof(email));
 
         if (string.IsNullOrWhiteSpace(firstName))
-            throw new ArgumentException("First name is required.", nameof(firstName));
+            throw new ArgumentException(
+                "First name is required.",
+                nameof(firstName));
 
         if (string.IsNullOrWhiteSpace(lastName))
-            throw new ArgumentException("Last name is required.", nameof(lastName));
+            throw new ArgumentException(
+                "Last name is required.",
+                nameof(lastName));
 
         ArgumentNullException.ThrowIfNull(passwordHashFactory);
 
@@ -32,7 +67,7 @@ public sealed class UserAccount
             NormalizedEmail = email.Trim().ToUpperInvariant(),
             FirstName = firstName.Trim(),
             LastName = lastName.Trim(),
-            Role = UserRole.Customer,
+            Role = role,
             IsActive = true,
             CreatedAtUtc = DateTimeOffset.UtcNow
         };
@@ -40,8 +75,10 @@ public sealed class UserAccount
         var passwordHash = passwordHashFactory(user);
 
         if (string.IsNullOrWhiteSpace(passwordHash))
+        {
             throw new InvalidOperationException(
                 "The password hashing operation returned an invalid hash.");
+        }
 
         user.PasswordHash = passwordHash;
 

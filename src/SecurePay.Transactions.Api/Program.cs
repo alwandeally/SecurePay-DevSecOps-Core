@@ -1,8 +1,9 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using SecurePay.Transactions.Api.Application.Operations;
 using SecurePay.Transactions.Api.Application.Transactions;
 using SecurePay.Transactions.Api.Application.Wallets;
 using SecurePay.Transactions.Api.Authorization;
@@ -151,6 +152,10 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddScoped<
     ITransactionService,
     TransactionService>();
+
+builder.Services.AddScoped<
+    IOperationsTransactionQueryService,
+    OperationsTransactionQueryService>();
 
 builder.Services.AddScoped<
     IWalletQueryService,

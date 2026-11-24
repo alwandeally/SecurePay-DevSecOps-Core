@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SecurePay.Transactions.Api.Domain.Entities;
 
@@ -96,6 +96,19 @@ public sealed class PaymentTransactionConfiguration
 
         builder.Property(transaction => transaction.UpdatedAtUtc)
             .HasColumnName("updated_at_utc");
+
+        builder.HasIndex(transaction =>
+                transaction.CreatedAtUtc)
+            .HasDatabaseName(
+                "ix_payment_transactions_created_at_utc");
+
+        builder.HasIndex(transaction => new
+        {
+            transaction.Status,
+            transaction.CreatedAtUtc
+        })
+            .HasDatabaseName(
+                "ix_payment_transactions_status_created_at_utc");
 
         builder.HasIndex(transaction => transaction.Reference)
             .IsUnique()

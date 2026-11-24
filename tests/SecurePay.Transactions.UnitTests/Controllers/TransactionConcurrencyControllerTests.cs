@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,9 +16,7 @@ public sealed class TransactionConcurrencyControllerTests
     {
         var transactionId = Guid.NewGuid();
 
-        var controller =
-            new TransactionLifecycleController(
-                new ConcurrencyThrowingTransactionService());
+        var controller = CreateController();
 
         var result =
             await controller.Complete(
@@ -33,9 +33,7 @@ public sealed class TransactionConcurrencyControllerTests
     {
         var transactionId = Guid.NewGuid();
 
-        var controller =
-            new TransactionLifecycleController(
-                new ConcurrencyThrowingTransactionService());
+        var controller = CreateController();
 
         var request =
             new FailTransactionRequest(
@@ -50,6 +48,23 @@ public sealed class TransactionConcurrencyControllerTests
         AssertConcurrencyConflict(
             result,
             transactionId);
+    }
+
+    private static TransactionLifecycleController CreateController()
+    {
+        return new TransactionLifecycleController(
+            new ConcurrencyThrowingTransactionService())
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                        [new Claim(JwtRegisteredClaimNames.Sub, Guid.NewGuid().ToString())],
+                        "Test"))
+                }
+            }
+        };
     }
 
     private static void AssertConcurrencyConflict(
@@ -109,6 +124,7 @@ public sealed class TransactionConcurrencyControllerTests
 
         public Task<TransactionResponse?> CompleteAsync(
             Guid transactionId,
+            Guid operatorId,
             CancellationToken cancellationToken)
         {
             return Task.FromException<TransactionResponse?>(
@@ -117,6 +133,7 @@ public sealed class TransactionConcurrencyControllerTests
 
         public Task<TransactionResponse?> FailAsync(
             Guid transactionId,
+            Guid operatorId,
             string failureReason,
             CancellationToken cancellationToken)
         {

@@ -141,8 +141,11 @@ public sealed class TransactionService(
 
     public async Task<TransactionResponse?> CompleteAsync(
         Guid transactionId,
+        Guid operatorId,
         CancellationToken cancellationToken)
     {
+        EnsureOperatorId(operatorId);
+
         var transaction =
             await dbContext.PaymentTransactions
                 .SingleOrDefaultAsync(
@@ -189,6 +192,13 @@ public sealed class TransactionService(
 
         dbContext.LedgerPostings.Add(posting);
 
+        dbContext.TransactionLifecycleAuditEntries.Add(
+            TransactionLifecycleAuditEntry.Create(
+                transaction.Id,
+                operatorId,
+                occurredAtUtc,
+                transaction.Status));
+
         await SaveLifecycleChangeAsync(
             transactionId,
             cancellationToken);
@@ -198,9 +208,12 @@ public sealed class TransactionService(
 
     public async Task<TransactionResponse?> FailAsync(
         Guid transactionId,
+        Guid operatorId,
         string failureReason,
         CancellationToken cancellationToken)
     {
+        EnsureOperatorId(operatorId);
+
         var transaction =
             await dbContext.PaymentTransactions
                 .SingleOrDefaultAsync(
@@ -213,9 +226,16 @@ public sealed class TransactionService(
             return null;
         }
 
-        transaction.MarkFailed(
-            failureReason,
-            DateTimeOffset.UtcNow);
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+
+        transaction.MarkFailed(failureReason, occurredAtUtc);
+
+        dbContext.TransactionLifecycleAuditEntries.Add(
+            TransactionLifecycleAuditEntry.Create(
+                transaction.Id,
+                operatorId,
+                occurredAtUtc,
+                transaction.Status));
 
         await SaveLifecycleChangeAsync(
             transactionId,
@@ -516,6 +536,15 @@ public sealed class TransactionService(
         }
     }
 
+    private static void EnsureOperatorId(Guid operatorId)
+    {
+        if (operatorId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "An operator ID is required.", nameof(operatorId));
+        }
+    }
+
     private async Task SaveLifecycleChangeAsync(
         Guid transactionId,
         CancellationToken cancellationToken)
@@ -523,7 +552,7 @@ public sealed class TransactionService(
         try
         {
             // EF Core wraps this multi-entity save in one database
-            // transaction, so wallet, ledger, and lifecycle changes
+            // transaction, so wallet, ledger, lifecycle, and audit changes
             // either all commit or all roll back.
             await dbContext.SaveChangesAsync(
                 cancellationToken);

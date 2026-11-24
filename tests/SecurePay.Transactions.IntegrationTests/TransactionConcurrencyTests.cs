@@ -51,6 +51,8 @@ public sealed class TransactionConcurrencyTests(
             .SingleAsync(existing =>
                 existing.Id == transaction.Id);
 
+        var winningOperatorId = Guid.NewGuid();
+
         await using (var winningScope =
             fixture.Factory.Services.CreateAsyncScope())
         {
@@ -65,6 +67,7 @@ public sealed class TransactionConcurrencyTests(
             var winningResponse =
                 await winningService.FailAsync(
                     transaction.Id,
+                    winningOperatorId,
                     "Processor rejected the transaction",
                     CancellationToken.None);
 
@@ -81,6 +84,7 @@ public sealed class TransactionConcurrencyTests(
         await Assert.ThrowsAsync<TransactionConcurrencyException>(
             () => staleService.FailAsync(
                 transaction.Id,
+                Guid.NewGuid(),
                 "Stale processor decision",
                 CancellationToken.None));
 
@@ -104,5 +108,12 @@ public sealed class TransactionConcurrencyTests(
         Assert.Equal(
             "Processor rejected the transaction",
             persistedTransaction.FailureReason);
+
+        var audit = await verificationDbContext.TransactionLifecycleAuditEntries
+            .AsNoTracking()
+            .SingleAsync(entry => entry.TransactionId == transaction.Id);
+
+        Assert.Equal(winningOperatorId, audit.OperatorId);
+        Assert.Equal(PaymentStatus.Failed, audit.ResultingStatus);
     }
 }

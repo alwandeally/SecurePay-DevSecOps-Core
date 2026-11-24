@@ -23,10 +23,13 @@ public sealed class TransactionsDbContext(
     public DbSet<LedgerEntry> LedgerEntries =>
         Set<LedgerEntry>();
 
+    public DbSet<TransactionLifecycleAuditEntry> TransactionLifecycleAuditEntries =>
+        Set<TransactionLifecycleAuditEntry>();
+
     public override int SaveChanges(
         bool acceptAllChangesOnSuccess)
     {
-        EnsureLedgerRecordsAreAppendOnly();
+        EnsureAppendOnlyRecordsAreNotChanged();
 
         return base.SaveChanges(
             acceptAllChangesOnSuccess);
@@ -36,7 +39,7 @@ public sealed class TransactionsDbContext(
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
     {
-        EnsureLedgerRecordsAreAppendOnly();
+        EnsureAppendOnlyRecordsAreNotChanged();
 
         return base.SaveChangesAsync(
             acceptAllChangesOnSuccess,
@@ -52,12 +55,12 @@ public sealed class TransactionsDbContext(
             typeof(TransactionsDbContext).Assembly);
     }
 
-    private void EnsureLedgerRecordsAreAppendOnly()
+    private void EnsureAppendOnlyRecordsAreNotChanged()
     {
         var forbiddenEntry =
             ChangeTracker.Entries()
                 .FirstOrDefault(entry =>
-                    IsLedgerRecord(entry) &&
+                    IsAppendOnlyRecord(entry) &&
                     entry.State is
                         EntityState.Modified or
                         EntityState.Deleted);
@@ -71,12 +74,13 @@ public sealed class TransactionsDbContext(
             $"{forbiddenEntry.Metadata.ClrType.Name} records are append-only and cannot be modified or deleted.");
     }
 
-    private static bool IsLedgerRecord(
+    private static bool IsAppendOnlyRecord(
         EntityEntry entry)
     {
         return entry.Entity is
             LedgerAccount or
             LedgerPosting or
-            LedgerEntry;
+            LedgerEntry or
+            TransactionLifecycleAuditEntry;
     }
 }

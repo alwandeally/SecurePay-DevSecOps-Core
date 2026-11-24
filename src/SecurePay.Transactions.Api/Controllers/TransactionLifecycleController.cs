@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecurePay.Transactions.Api.Application.Transactions;
 using SecurePay.Transactions.Api.Authorization;
@@ -24,11 +26,17 @@ public sealed class TransactionLifecycleController(
         Guid transactionId,
         CancellationToken cancellationToken)
     {
+        if (!TryGetOperatorId(out var operatorId))
+        {
+            return Forbid();
+        }
+
         try
         {
             var response =
                 await transactionService.CompleteAsync(
                     transactionId,
+                    operatorId,
                     cancellationToken);
 
             return response is null
@@ -68,11 +76,17 @@ public sealed class TransactionLifecycleController(
         [FromBody] FailTransactionRequest request,
         CancellationToken cancellationToken)
     {
+        if (!TryGetOperatorId(out var operatorId))
+        {
+            return Forbid();
+        }
+
         try
         {
             var response =
                 await transactionService.FailAsync(
                     transactionId,
+                    operatorId,
                     request.FailureReason,
                     cancellationToken);
 
@@ -107,5 +121,11 @@ public sealed class TransactionLifecycleController(
                 Status = StatusCodes.Status409Conflict
             });
         }
+    }
+
+    private bool TryGetOperatorId(out Guid operatorId)
+    {
+        var subject = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        return Guid.TryParse(subject, out operatorId) && operatorId != Guid.Empty;
     }
 }

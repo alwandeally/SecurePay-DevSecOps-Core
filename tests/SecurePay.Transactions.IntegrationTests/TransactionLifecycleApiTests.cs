@@ -29,6 +29,8 @@ public sealed class TransactionLifecycleApiTests(
         Assert.Equal(
             HttpStatusCode.Unauthorized,
             response.StatusCode);
+
+        Assert.Empty(await LoadAuditEntriesAsync(transaction.Id));
     }
 
     [Fact]
@@ -48,6 +50,26 @@ public sealed class TransactionLifecycleApiTests(
         Assert.Equal(
             HttpStatusCode.Forbidden,
             response.StatusCode);
+
+        Assert.Empty(await LoadAuditEntriesAsync(transaction.Id));
+    }
+
+    [Fact]
+    public async Task Complete_WithEmptyOperatorSubject_RejectsChange()
+    {
+        var transaction = await SeedPendingTransactionAsync();
+        using var request = CreateAuthorizedRequest(
+            HttpMethod.Post,
+            $"/api/operations/transactions/{transaction.Id}/complete",
+            role: "Operations",
+            userId: Guid.Empty);
+
+        using var response = await fixture.Client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        var persisted = await LoadTransactionAsync(transaction.Id);
+        Assert.Equal(TransactionStatus.Pending, persisted.Status);
+        Assert.Empty(await LoadAuditEntriesAsync(transaction.Id));
     }
 
     [Fact]
@@ -56,9 +78,11 @@ public sealed class TransactionLifecycleApiTests(
         var transaction =
             await SeedPendingTransactionAsync();
 
+        var operatorId = Guid.NewGuid();
         using var request = CreateAuthorizedRequest(
             HttpMethod.Post,
             $"/api/operations/transactions/{transaction.Id}/complete",
+            userId: operatorId,
             role: "Operations");
 
         using var response =
@@ -81,6 +105,12 @@ public sealed class TransactionLifecycleApiTests(
             TransactionStatus.Completed,
             persisted.Status);
         Assert.NotNull(persisted.CompletedAtUtc);
+
+        var audit = Assert.Single(await LoadAuditEntriesAsync(transaction.Id));
+        Assert.Equal(operatorId, audit.OperatorId);
+        Assert.Equal("Complete", audit.Action);
+        Assert.Equal(TransactionStatus.Completed, audit.ResultingStatus);
+        Assert.Equal<DateTimeOffset?>(persisted.CompletedAtUtc, audit.OccurredAtUtc);
     }
 
     [Fact]
@@ -89,9 +119,11 @@ public sealed class TransactionLifecycleApiTests(
         var transaction =
             await SeedPendingTransactionAsync();
 
+        var operatorId = Guid.NewGuid();
         using var request = CreateAuthorizedRequest(
             HttpMethod.Post,
             $"/api/operations/transactions/{transaction.Id}/fail",
+            userId: operatorId,
             role: "Administrator",
             content: JsonContent.Create(new
             {
@@ -123,6 +155,12 @@ public sealed class TransactionLifecycleApiTests(
         Assert.Equal(
             "Payment provider rejected the transaction",
             persisted.FailureReason);
+
+        var audit = Assert.Single(await LoadAuditEntriesAsync(transaction.Id));
+        Assert.Equal(operatorId, audit.OperatorId);
+        Assert.Equal("Fail", audit.Action);
+        Assert.Equal(TransactionStatus.Failed, audit.ResultingStatus);
+        Assert.Equal<DateTimeOffset?>(persisted.UpdatedAtUtc, audit.OccurredAtUtc);
     }
 
     [Fact]
@@ -175,6 +213,9 @@ public sealed class TransactionLifecycleApiTests(
         Assert.Equal(
             HttpStatusCode.Conflict,
             failResponse.StatusCode);
+
+        var audit = Assert.Single(await LoadAuditEntriesAsync(transaction.Id));
+        Assert.Equal("Complete", audit.Action);
     }
 
     private async Task<PaymentTransaction>
@@ -219,11 +260,23 @@ public sealed class TransactionLifecycleApiTests(
                     transaction.Id == transactionId);
     }
 
+    private async Task<List<TransactionLifecycleAuditEntry>> LoadAuditEntriesAsync(Guid transactionId)
+    {
+        await using var scope = fixture.Factory.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<TransactionsDbContext>();
+
+        return await dbContext.TransactionLifecycleAuditEntries
+            .AsNoTracking()
+            .Where(entry => entry.TransactionId == transactionId)
+            .ToListAsync();
+    }
+
     private static HttpRequestMessage CreateAuthorizedRequest(
         HttpMethod method,
         string requestUri,
         string role,
-        HttpContent? content = null)
+        HttpContent? content = null,
+        Guid? userId = null)
     {
         var request =
             new HttpRequestMessage(method, requestUri)
@@ -235,7 +288,7 @@ public sealed class TransactionLifecycleApiTests(
             new AuthenticationHeaderValue(
                 "Bearer",
                 TestJwtTokens.Create(
-                    Guid.NewGuid(),
+                    userId ?? Guid.NewGuid(),
                     role));
 
         return request;

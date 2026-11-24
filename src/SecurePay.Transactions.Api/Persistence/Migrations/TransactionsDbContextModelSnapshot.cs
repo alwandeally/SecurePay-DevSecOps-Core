@@ -247,6 +247,47 @@ namespace SecurePay.Transactions.Api.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SecurePay.Transactions.Api.Domain.Entities.TransactionLifecycleAuditEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("action");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<Guid>("OperatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("operator_id");
+
+                    b.Property<string>("ResultingStatus")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("resulting_status");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transaction_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransactionId")
+                        .HasDatabaseName("ix_transaction_lifecycle_audit_transaction_id");
+
+                    b.ToTable("transaction_lifecycle_audit_entries", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_transaction_lifecycle_audit_action_status", "(action = 'Complete' AND resulting_status = 'Completed')\r\nOR (action = 'Fail' AND resulting_status = 'Failed')");
+                        });
+                });
+
             modelBuilder.Entity("SecurePay.Transactions.Api.Domain.Entities.WalletAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -322,6 +363,15 @@ namespace SecurePay.Transactions.Api.Persistence.Migrations
                     b.HasOne("SecurePay.Transactions.Api.Domain.Entities.PaymentTransaction", null)
                         .WithOne()
                         .HasForeignKey("SecurePay.Transactions.Api.Domain.Entities.LedgerPosting", "PaymentTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SecurePay.Transactions.Api.Domain.Entities.TransactionLifecycleAuditEntry", b =>
+                {
+                    b.HasOne("SecurePay.Transactions.Api.Domain.Entities.PaymentTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("TransactionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

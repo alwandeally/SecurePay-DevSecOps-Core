@@ -56,6 +56,7 @@ public sealed class AtomicTransactionPostingTests(
             var response =
                 await transactionService.CompleteAsync(
                     transaction.Id,
+                    Guid.NewGuid(),
                     CancellationToken.None);
 
             Assert.NotNull(response);
@@ -202,6 +203,7 @@ public sealed class AtomicTransactionPostingTests(
             var response =
                 await transactionService.CompleteAsync(
                     transaction.Id,
+                    Guid.NewGuid(),
                     CancellationToken.None);
 
             Assert.NotNull(response);
@@ -356,6 +358,7 @@ public sealed class AtomicTransactionPostingTests(
             var response =
                 await transactionService.CompleteAsync(
                     transaction.Id,
+                    Guid.NewGuid(),
                     CancellationToken.None);
 
             Assert.NotNull(response);
@@ -512,6 +515,7 @@ public sealed class AtomicTransactionPostingTests(
                 await Assert.ThrowsAsync<InvalidOperationException>(
                     () => transactionService.CompleteAsync(
                         transaction.Id,
+                        Guid.NewGuid(),
                         CancellationToken.None));
 
             Assert.Equal(

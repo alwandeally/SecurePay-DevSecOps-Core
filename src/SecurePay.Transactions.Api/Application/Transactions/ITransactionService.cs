@@ -20,10 +20,12 @@ public interface ITransactionService
 
     Task<TransactionResponse?> CompleteAsync(
         Guid transactionId,
+        Guid operatorId,
         CancellationToken cancellationToken);
 
     Task<TransactionResponse?> FailAsync(
         Guid transactionId,
+        Guid operatorId,
         string failureReason,
         CancellationToken cancellationToken);
 }

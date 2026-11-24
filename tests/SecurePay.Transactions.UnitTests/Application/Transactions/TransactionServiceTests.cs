@@ -171,6 +171,7 @@ public sealed class TransactionServiceTests
 
         var response = await service.CompleteAsync(
             transaction.Id,
+            Guid.NewGuid(),
             CancellationToken.None);
 
         Assert.NotNull(response);
@@ -190,6 +191,7 @@ public sealed class TransactionServiceTests
         var service = new TransactionService(dbContext);
 
         var response = await service.CompleteAsync(
+            Guid.NewGuid(),
             Guid.NewGuid(),
             CancellationToken.None);
 
@@ -211,6 +213,7 @@ public sealed class TransactionServiceTests
 
         var response = await service.FailAsync(
             transaction.Id,
+            Guid.NewGuid(),
             "  Payment provider declined the request  ",
             CancellationToken.None);
 
@@ -231,6 +234,7 @@ public sealed class TransactionServiceTests
         var service = new TransactionService(dbContext);
 
         var response = await service.FailAsync(
+            Guid.NewGuid(),
             Guid.NewGuid(),
             "Payment provider unavailable",
             CancellationToken.None);
@@ -258,6 +262,7 @@ public sealed class TransactionServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.CompleteAsync(
                 transaction.Id,
+                Guid.NewGuid(),
                 CancellationToken.None));
     }
 
@@ -279,6 +284,7 @@ public sealed class TransactionServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.FailAsync(
                 transaction.Id,
+                Guid.NewGuid(),
                 "Cannot fail a completed transaction",
                 CancellationToken.None));
     }

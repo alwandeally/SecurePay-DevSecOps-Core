@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SecurePay // Ops Control</title>
+<link rel="stylesheet" href="./ops.css">
+<header><strong>SecurePay // Ops Control</strong><span class="badge">DEMO · eu-west-1</span><nav aria-label="Time range"></nav><button id="refresh">Refresh</button><span id="connection" role="status">Connecting</span></header>
+<main>
+<p class="muted">IAM Role: <strong>SecOps-Viewer</strong> (simulated)</p>
+<div id="warning" role="alert" hidden>Demo telemetry interrupted. Showing the last available snapshot. <button id="retry">Retry</button></div>
+<section id="metrics" class="grid four" aria-label="Service level indicators"></section>
+<section id="charts" class="grid two" aria-label="Performance charts"></section>
+<h2>Service &amp; Infrastructure Health</h2>
+<section id="health" class="grid four" aria-label="Service health"></section>
+<section class="panel audit">
+<h2>Transaction &amp; Security Stream <small>SIMULATED</small></h2>
+<div class="toolbar"><input id="search" type="search" aria-label="Filter by Trace ID or IP" placeholder="Filter by Trace ID or IP…"><div id="filters" aria-label="Status filters"></div><button id="pause" aria-pressed="false">Pause stream</button></div>
+<div class="table-wrap"><table><thead><tr><th>Timestamp (UTC)</th><th>Trace ID</th><th>Endpoint</th><th>Service</th><th>Security posture</th><th>Latency</th><th>Status</th></tr></thead><tbody id="entries"></tbody></table></div>
+</section>
+<p><button id="disconnect">Simulate disconnect</button> <span id="notice" role="status"></span></p>
+</main>
+<dialog id="inspector" aria-labelledby="inspector-title"><form method="dialog"><button>Close</button></form><h2 id="inspector-title">Event inspector</h2><pre></pre><p>CloudWatch link unavailable in demo mode.</p><button disabled>Trigger Incident Alert</button></dialog>
+<script type="module" src="./src/dashboard.js"></script>
+</html>

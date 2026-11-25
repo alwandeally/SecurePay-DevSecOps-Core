@@ -1,0 +1,10 @@
+services:
+  ops-dashboard:
+    build:
+      context: ./ops-dashboard
+    ports:
+      - "127.0.0.1:8081:8080"
+    depends_on:
+      - transactions-api
+    networks:
+      - securepay-backend

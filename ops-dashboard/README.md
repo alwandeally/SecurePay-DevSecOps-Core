@@ -17,6 +17,17 @@ transaction lifecycle audit trail.
 
 ## Hardened local preview
 
+The Payment Rail Monitor is a separate synthetic fixture, not the Operations
+transactions API or a broker connection. Its health cards describe the retained
+demo window, and throughput is illustrative. Trace buttons open local
+correlation metadata, not an external tracing system. No body checksum is
+available because no broker body is fetched.
+
+Pause Live Tail to freeze rows, time, and health counters. Up to 150 incoming
+events are buffered; overflow drops the oldest and is shown in the UI. Flush
+updates the snapshot without resuming. JSON export includes only filtered
+snapshot rows and sanitized demo fields. The footer is not a persistent audit log.
+
 From the repository root:
 
 ```powershell

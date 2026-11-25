@@ -18,7 +18,19 @@
 <div class="table-wrap"><table><thead><tr><th>Timestamp (UTC)</th><th>Trace ID</th><th>Endpoint</th><th>Service</th><th>Security posture</th><th>Latency</th><th>Status</th></tr></thead><tbody id="entries"></tbody></table></div>
 </section>
 <p><button id="disconnect">Simulate disconnect</button> <span id="notice" role="status"></span></p>
+<section class="panel" id="payment-queue" aria-labelledby="queue-title">
+<h2 id="queue-title">Payment Rail Monitor <small>SIMULATED · READ-ONLY / PEEK MODE</small></h2>
+<div class="grid four" id="queue-health"></div>
+<div class="toolbar" id="queue-tools" aria-label="Queue controls">
+<button id="queue-live" aria-pressed="true">Live Tail</button>
+<button id="queue-flush" hidden></button>
+<button id="queue-export">Export Snapshot (JSON)</button>
+</div>
+<div class="table-wrap"><table><thead><tr><th>Idempotency key</th><th>Trace ID</th><th>Partition</th><th>Rail</th><th class="queue-amount">Amount</th><th>Lifecycle</th><th>Receive count · enqueue age</th></tr></thead><tbody id="queue-rows"></tbody></table></div>
+<p id="queue-audit" role="status">Simulated audit · No exports yet.</p>
+</section>
 </main>
 <dialog id="inspector" aria-labelledby="inspector-title"><form method="dialog"><button>Close</button></form><h2 id="inspector-title">Event inspector</h2><pre></pre><p>CloudWatch link unavailable in demo mode.</p><button disabled>Trigger Incident Alert</button></dialog>
 <script type="module" src="./src/dashboard.js"></script>
+<script type="module" src="./src/paymentQueue.js"></script>
 </html>

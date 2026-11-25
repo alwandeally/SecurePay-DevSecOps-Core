@@ -7,6 +7,19 @@
 <header><strong>SecurePay // Ops Control</strong><span class="badge">DEMO · eu-west-1</span><nav aria-label="Time range"></nav><button id="refresh">Refresh</button><span id="connection" role="status">Connecting</span></header>
 <main>
 <p class="muted">IAM Role: <strong>SecOps-Viewer</strong> (simulated)</p>
+<section class="panel" aria-labelledby="ops-records-title">
+<h2 id="ops-records-title">Operations Transactions <small>API DATA · READ ONLY</small></h2>
+<p>Local development: enter a short-lived Operations or Administrator token. It is cleared from the input when you load records.</p>
+<div class="toolbar">
+<label>Access token <input id="ops-token" type="password" autocomplete="off" spellcheck="false"></label>
+<label>Status <select id="ops-status"><option value="">All</option><option>Pending</option><option>Completed</option><option>Failed</option></select></label>
+<button id="ops-load">Load transactions</button>
+<button id="ops-clear">Clear session</button>
+</div>
+<p id="ops-message" role="status">No transactions loaded.</p>
+<div class="table-wrap"><table><thead><tr><th>Created (UTC)</th><th>Reference</th><th>Type</th><th>Amount</th><th>Currency</th><th>Status</th></tr></thead><tbody id="ops-records"></tbody></table></div>
+<div class="toolbar"><button id="ops-prev" disabled>Previous</button><button id="ops-next" disabled>Next</button></div>
+</section>
 <div id="warning" role="alert" hidden>Demo telemetry interrupted. Showing the last available snapshot. <button id="retry">Retry</button></div>
 <section id="metrics" class="grid four" aria-label="Service level indicators"></section>
 <section id="charts" class="grid two" aria-label="Performance charts"></section>
@@ -33,4 +46,5 @@
 <dialog id="inspector" aria-labelledby="inspector-title"><form method="dialog"><button>Close</button></form><h2 id="inspector-title">Event inspector</h2><pre></pre><p>CloudWatch link unavailable in demo mode.</p><button disabled>Trigger Incident Alert</button></dialog>
 <script type="module" src="./src/dashboard.js"></script>
 <script type="module" src="./src/paymentQueue.js"></script>
+<script type="module" src="./src/operationsTransactions.js"></script>
 </html>

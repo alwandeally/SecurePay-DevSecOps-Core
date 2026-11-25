@@ -15,6 +15,27 @@ authorization on the server. Incident dispatch and CloudWatch deep links
 are intentionally disabled in the demo. The event stream is not the stored
 transaction lifecycle audit trail.
 
+## Operations Transactions (local development)
+
+From the repository root, use the existing Compose environment and database
+configuration:
+
+```powershell
+docker compose -f docker-compose.yml -f ops-dashboard/compose.operations.yml up -d --build ops-dashboard
+```
+
+Open http://127.0.0.1:8081/. Paste only a short-lived **local test** token
+issued by SecurePay Identity for an Operations or Administrator account.
+Do not paste production credentials or share a token in screenshots.
+The token stays in page memory; Clear session aborts pending reads and clears
+the token and table. The API remains responsible for authorization.
+The dashboard proxies only GET on the exact transactions route.
+This plain-HTTP loopback preview is not a production sign-in flow.
+
+Smoke test: a valid Operations token loads database records; a signed Customer
+token is forbidden; an invalid token is rejected. Check pagination, status
+filtering and Clear session. The Payment Rail Monitor stays synthetic.
+
 ## Hardened local preview
 
 The Payment Rail Monitor is a separate synthetic fixture, not the Operations
